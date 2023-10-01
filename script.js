@@ -1,78 +1,87 @@
+let iteration = 1
+let labels = []
+let sin_points = []
+let sin_rnd_points = []
+let average_points = []
+let median_points = []
+let disp_points = []
 
-// скользящий буфер
-let sliding_buffer = []
+function createPoints() {
+    let new_point = Math.floor((Math.sin(Math.PI * iteration / 180) + 1) * 50)
+    let new_point_with_noise = new_point + randomInteger(-5, 5)
+    let proc = processing(new_point_with_noise)
 
-// целевая функция задания
-function processing(new_point) {
-    let result = {
-        "median":0,
-        "average":0,
-        "dispersion":0
+    labels.push(' ')
+    sin_points.push(new_point)
+    sin_rnd_points.push(new_point_with_noise)
+    average_points.push(proc.average)
+    median_points.push(proc.median)
+    disp_points.push(proc.dispersion)
+
+    iteration++
+    if (labels.length > 360) {
+        labels.shift()
+        sin_points.shift()
+        sin_rnd_points.shift()
+        average_points.shift()
+        median_points.shift()
+        disp_points.shift()
     }
-    // добавление в скользящий буфер новой точки
-    sliding_buffer.push(new_point)
-    if (sliding_buffer.length < 11) {
-        return result
-    }
-    sliding_buffer.shift()
-    // копирование буфера для дальнейшей работы
-    let sl_buf_copy = sliding_buffer.slice()
-    // сортировка
-    sl_buf_copy.sort(function (a, b) {
-        return a - b
-    })
-    // удаление одного миимального и одного максимального значения
-    sl_buf_copy = sl_buf_copy.slice(1, -1)
-
-    // медиана
-    result.median = median(sl_buf_copy)
-    // среднее арифметическое
-    result.average = average(sl_buf_copy) 
-    // дисперсия
-    result.dispersion = dispersion(sl_buf_copy, result.average)
-
-    return result
 }
 
-function median(buf) {
-    let mdn = 0
-    if ((buf.length % 2) != 0) {
-        mdn = buf[(buf.length-1) / 2]
+for (let i = 1; i < 360; i++) {
+    createPoints()
+}
 
-    } else {
-        mdn = (buf[buf.length / 2] + buf[(buf.length / 2 - 1)]) / 2
+const ctx = document.getElementById('Charts');
+
+let chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: labels,
+        datasets: [{
+            label: 'sin',
+            data: sin_points,
+            borderWidth: 1,
+        },
+        {
+            label: 'sin + noise',
+            data: sin_rnd_points,
+            borderWidth: 1,
+
+        },
+        {
+            label: 'average',
+            data: average_points,
+            borderWidth: 1,
+
+        },
+        {
+            label: 'median',
+            data: median_points,
+            borderWidth: 1,
+
+        },
+        {
+            label: 'dispersion',
+            data: disp_points,
+            borderWidth: 1,
+
+        },
+        ]
+    },
+    options: {
+        animations: false,
+        radius: 0
     }
-    return mdn
-}
+});
 
-function average(buf) {
-    let sum = 0
-    for (val of buf) {
-        sum += val
-    }
-    return sum / buf.length
-}
-
-function dispersion(buf, avrg) {
-    let sum_squared_deviations = 0
-    for (val of buf) {
-        sum_squared_deviations += (val - avrg) * (val - avrg)
-    }
-    return sum_squared_deviations / buf.length
-}
-
-
-for (let i = 0; i < 30; i++) {
-    console.log(sliding_buffer)
-    let res = processing(100 + randomInteger(0, 5))
-    console.log(res)
-}
+setInterval(function () {
+    createPoints()
+    chart.update()
+}, 100)
 
 function randomInteger(min, max) {
-    // случайное число от min до (max+1)
     let rand = min + Math.random() * (max + 1 - min)
     return Math.floor(rand)
 }
-
-
-const myChart = new Chart(ctx, {});
